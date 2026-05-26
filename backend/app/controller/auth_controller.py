@@ -45,3 +45,12 @@ async def get_current_user(guest_id: str):
 
     return user
 
+async def get_all_guest_users():
+    users_collection = get_collection("users")
+    guest_users = []
+    async for user in users_collection.find({"is_guest": True}):
+        # 👇 BREAKING FIX: MongoDB ka ObjectId response bhejte waqt JSON compatible nahi hota, isliye delete kar rahe hain
+        if "_id" in user:
+            del user["_id"]
+        guest_users.append(user)
+    return guest_users

@@ -1,5 +1,5 @@
 from fastapi import APIRouter, status
-from app.controller.auth_controller import generate_guest_user, get_current_user
+from app.controller.auth_controller import generate_guest_user, get_current_user , get_all_guest_users
 
 router = APIRouter(
     prefix="/auth",
@@ -13,9 +13,17 @@ async def create_guest_user():
     """
     return await generate_guest_user()
 
+@router.get("/guest", status_code=status.HTTP_200_OK)
+async def get_all_guests():
+    """
+    Get the details of all guest users.
+    """
+    return await get_all_guest_users()
+
 @router.get("/guest/{guest_id}", status_code=status.HTTP_200_OK)
 async def get_guest_user(guest_id: str):
     """
     Get the details of a specific guest user by their ID.
     """
     return await get_current_user(guest_id)
+

@@ -2,6 +2,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config.db import client
 from app.routes.auth import router as auth_router
+from app.routes.exam import router as exam_router
+from app.routes.subject import router as subject_router
 
 
 # FastAPI ka instance banaya
@@ -32,7 +34,8 @@ async def startup_db_client():
 
 # Routes
 app.include_router(auth_router)
-
+app.include_router(exam_router)
+app.include_router(subject_router)
 # Base Route
 @app.get("/")
 def read_root():
