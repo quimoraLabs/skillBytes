@@ -8,6 +8,6 @@ router = APIRouter(prefix="/subjects", tags=["Subjects"])
 async def create_subject(payload: SubjectCreate):
     return await create_subject_logic(payload)
 
-@router.get("/")
+@router.get("/{exam_id}")
 async def get_all_subjects(exam_id: str):
     return await get_all_subjects_logic(exam_id)

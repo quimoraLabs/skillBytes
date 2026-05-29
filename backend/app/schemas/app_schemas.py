@@ -5,6 +5,14 @@ from datetime import datetime
 # ==========================================
 # 1. EXAM SCHEMAS
 # ==========================================
+class ExamWithSubjectsResponse(BaseModel):
+    exam_id: str
+    exam_name: str
+    description: Optional[str] = None
+    # this will be populated with subjects when fetching exam details
+    subjects: List[SubjectResponse]
+
+
 class ExamCreate(BaseModel):
     name: str = Field(..., example="JEE Mains 2026")
     description: Optional[str] = Field(None, example="Engineering Entrance Exam")
@@ -25,6 +33,10 @@ class SubjectResponse(SubjectCreate):
 # ==========================================
 # 3. CHAPTER SCHEMAS
 # ==========================================
+class BulkChapterCreate(BaseModel):
+    subject_id: str = Field(..., example="subject_e7d3c4")
+    titles: List[str] = Field(..., example=["Kinematics", "Thermodynamics", "Optics"])
+    
 class ChapterCreate(BaseModel):
     subject_id: str = Field(..., example="sub_x1y2z3")
     title: str = Field(..., example="Kinematics")
