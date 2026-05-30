@@ -1,69 +1,68 @@
 import asyncio
 from motor.motor_asyncio import AsyncIOMotorClient
-from datetime import datetime, timedelta
-import random
 
-client = AsyncIOMotorClient("mongodb://localhost:27017")
-db = client["skillbytes_db"] # Apne DB ka naam cross check kar lena
+async def seed_database():
+    # Connect to local MongoDB instance
+    client = AsyncIOMotorClient("mongodb://localhost:27017")
+    db = client["skillbytes_db"] # Apne DB ka naam yahan likho
 
-async def seed():
-    print("Seeding database...")
-    
-    # 1. Clean old data
-    await db.exams.drop()
-    await db.subjects.drop()
-    await db.chapters.drop()
-    await db.quiz_sessions.drop()
-    
-    # 2. Insert Dummy Exam
-    exam = {"exam_id": "exam_jee", "name": "JEE Exam 2026", "description": "Engineering Entrance"}
-    await db.exams.insert_one(exam)
-    
-    # 3. Insert Dummy Subject
-    subject = {"subject_id": "sub_maths", "exam_id": "exam_jee", "name": "Mathematics"}
-    await db.subjects.insert_one(subject)
-    
-    # 4. Insert Dummy Chapter
-    chapter = {"chapter_id": "ch_calculus", "subject_id": "sub_maths", "title": "Calculus Basic"}
-    await db.chapters.insert_one(chapter)
-    
-    # 5. Insert Fake Quiz Sessions for Analytics (Past 7 Days data)
-    statuses = ["completed", "abandoned"]
-    
-    for i in range(100): # 100 fake sessions banate hain
-        user_id = f"guest_user_{random.randint(10, 50)}"
-        days_ago = random.randint(0, 7)
-        hour = random.randint(8, 23) # Peak activity hours track karne ke liye
-        
-        start_time = datetime.utcnow() - timedelta(days=days_ago)
-        start_time = start_time.replace(hour=hour, minute=random.randint(0,59))
-        
-        responses = []
-        # Har session me 3-4 questions serve karwao
-        for q in range(random.randint(2, 5)):
-            shown = start_time + timedelta(seconds=q*30)
-            submitted = shown + timedelta(seconds=random.randint(5, 25)) # Response time 5-25s
-            
-            responses.append({
-                "question_id": f"q_{q}",
-                "selected_option": "Option A",
-                "is_correct": random.choice([True, False]),
-                "shown_at": shown,
-                "submitted_at": submitted,
-                "duration_seconds": (submitted - shown).total_seconds()
-            })
-            
-        session = {
-            "session_id": f"sess_{i}",
-            "user_id": user_id,
-            "chapter_id": "ch_calculus",
-            "status": random.choice(statuses),
-            "started_at": start_time,
-            "responses": responses
-        }
-        await db.quiz_sessions.insert_one(session)
-        
-    print("Database Seeded Successfully! 🚀")
+    print("Cleaning old data...")
+    await db.exams.delete_many({})
+    await db.subjects.delete_many({})
+    await db.chapters.delete_many({})
+    await db.quizzes.delete_many({})
+
+    print("Seeding Exams...")
+    exam_doc = {
+        "exam_id": "exam_jee",
+        "name": "JEE Mains",
+        "description": "Joint Entrance Examination"
+    }
+    await db.exams.insert_one(exam_doc)
+
+    print("Seeding Subjects...")
+    subject_doc = {
+        "exam_id": "exam_jee",
+        "subject_id": "sub_phy",
+        "name": "Physics"
+    }
+    await db.subjects.insert_one(subject_doc)
+
+    print("Seeding Chapters...")
+    chapter_doc = {
+        "subject_id": "sub_phy",
+        "chapter_id": "ch_kine12",
+        "title": "Kinematics"
+    }
+    await db.chapters.insert_one(chapter_doc)
+
+    print("Seeding Quiz with Questions...")
+    quiz_doc = {
+        "quiz_id": "quiz_kine_01",
+        "chapter_id": "ch_kine12",
+        "title": "Kinematics Basic Test",
+        "description": "Test your fundamentals of motion",
+        "score": 2, # Total quiz score
+        "questions": [
+            {
+                "question_id": "q_1",
+                "text": "What is the SI unit of acceleration?",
+                "options": ["m/s", "m/s^2", "km/h", "m*s"],
+                "correct_answer": "m/s^2",
+                "score": 1
+            },
+            {
+                "question_id": "q_2",
+                "text": "Displacement is a ________ quantity.",
+                "options": ["Scalar", "Vector", "Tensor", "Dimensionless"],
+                "correct_answer": "Vector",
+                "score": 1
+            }
+        ]
+    }
+    await db.quizzes.insert_one(quiz_doc)
+
+    print("🎉 Database Seeded Successfully with hierarchical data!")
 
 if __name__ == "__main__":
-    asyncio.run(seed())
+    asyncio.run(seed_database())

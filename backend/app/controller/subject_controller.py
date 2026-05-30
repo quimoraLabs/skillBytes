@@ -1,45 +1,104 @@
 import uuid
 from app.config.db import get_collection
 from fastapi import HTTPException, status
-from app.utils.db_helpers import populate_parent_with_children
+from app.utils.db_helpers import execute_smart_bulk_insert, populate_parent_with_children
+from app.schemas.subject_schemas import SubjectCreate, BulkSubjectCreate
+from app.schemas.chapter_schemas import ChapterNestedResponse  # Injected dynamic mapping reference
 
-async def create_subject_logic(payload: SubjectCreate): 
+
+async def create_subject_logic(payload: SubjectCreate)->dict: 
+    """
+    Validates standalone data elements to map individual subject paths in database engines.
+    """
     subject_collection = get_collection("subjects")
     
-    # 
     exam_id = payload.exam_id
-    name = payload.name
-    # Validation: exam_id and name are required fields for creating a subject. If either is missing, we will return a 400 Bad Request with a clear message.
+    name = payload.name.strip() if payload.name else ""
+
     if not exam_id or not name:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, 
-            detail="exam_id aur name dono bhejna zaroori hai bhai!"
+            detail="The tracking target configurations exam_id and validation name entries are required attributes."
         )
     
-    # First convert the playload to a dict, then add a unique subject_id using uuid, and then insert into DB.
-    insert_data = payload.dict()
-    insert_data["subject_id"] = f"subject_{uuid.uuid4().hex[:8]}"
+    insert_data = payload.model_dump()
+    insert_data["name"] = name
+    insert_data["subject_id"] = f"sub_{uuid.uuid4().hex[:6]}"
     
     await subject_collection.insert_one(insert_data)
-    insert_data.pop("_id", None)
+    
+    if "_id" in insert_data:
+        del insert_data["_id"]
+        
     return insert_data
 
-async def get_all_subjects_logic(exam_id: str):
+async def create_bulk_subjects_logic(payload: BulkSubjectCreate) -> dict:
+    """
+    Ingests multiple subject tracking items simultaneously under an authenticated operational master parent context.
+    """
+    exam_id = payload.exam_id
+    names_list = payload.names
+
+    if not exam_id or not names_list:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Valid parent target mapping attributes and array context name tracking tokens must be specified."
+        )
+
+    result = await execute_smart_bulk_insert(
+        collection_name="subjects",
+        parent_id_key="exam_id",
+        parent_id_value=exam_id,
+        child_id_key="subject_id",
+        child_id_prefix="sub",
+        items_list=names_list,
+        match_field_in_db="name"
+    )
+
+    return result
+
+async def get_all_subjects_by_exam_logic(exam_id: str) -> list:
+    """
+    Retrieves flat standalone subjects matching a target exam_id configuration constraint.
+    Drops heavy nested child lookups to prevent response payload inflation at high scale.
+    """
     if not exam_id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, 
-            detail="exam_id is required"
+            detail="The operational tracking search query property exam_id must be supplied."
+        )
+        
+    subject_collection = get_collection("subjects")
+    subjects_cursor = subject_collection.find({"exam_id": exam_id})
+    subjects = await subjects_cursor.to_list(length=100)
+    
+    for subject in subjects:
+        if "_id" in subject:
+            del subject["_id"]
+            
+    return subjects
+
+
+async def get_current_subject_with_chapters_logic(subject_id: str) -> dict:
+    """
+    Aggregates targeted subject metadata tracking information directly tied 
+    to a dynamic child chapter mapping array using clean injection design patterns.
+    """
+    if not subject_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, 
+            detail="The operational path tracking key entity configuration identifier context must be provided."
         )
     
-    # It will make just 1 call to DB, and return parent details + nested children array without repetition in one go
+    # Executes the generic dynamic relationship aggregation pipeline without circular dependencies
     aggregated_data = await populate_parent_with_children(
-        parent_id=exam_id,
-        parent_collection="exams",
-        parent_id_field="exam_id",
+        parent_id=subject_id,
+        parent_collection="subjects",
+        parent_id_field="subject_id",
         parent_name_field="name",
-        child_collection="subjects",
-        child_lookup_field="exam_id",
-        child_schema_model=None # It is kept None for now, but in future if we want to parse/validate each child document with a Pydantic model before sending response, we can easily do that here by passing the model and applying it to each child in the loop above in db_helpers function.
+        child_collection="chapters",
+        child_lookup_field="subject_id",
+        child_schema_model=ChapterNestedResponse
     )
     
     return aggregated_data
