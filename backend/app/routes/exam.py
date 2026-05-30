@@ -1,7 +1,8 @@
 from fastapi import APIRouter, status
 from typing import List
 from app.controller.exam_controller import create_exam_logic, get_all_exams_logic,get_current_exam_logic
-from app.schemas.exam_schemas import ExamCreate , ExamResponse,ExamWithSubjectsResponse
+from app.schemas.exam_schemas import ExamCreate , ExamResponse
+from app.schemas.subject_schemas import ExamWithSubjectsResponse
 
 router = APIRouter(prefix="/exams", tags=["Exams"])
 

@@ -6,7 +6,7 @@ from app.controller.subject_controller import (
     get_all_subjects_by_exam_logic,
     get_current_subject_with_chapters_logic
 )
-from app.schemas.subject_schemas import SubjectCreate, SubjectResponse, BulkSubjectCreate
+from app.schemas.subject_schemas import SubjectCreate, SubjectResponse, BulkSubjectCreate ,ExamWithSubjectsResponse
 from app.schemas.chapter_schemas import SubjectWithChaptersResponse  # Validates the detail view structure
 
 router = APIRouter(prefix="/subjects", tags=["Subjects"])
@@ -27,15 +27,16 @@ async def create_bulk_subjects(payload: BulkSubjectCreate):
     return await create_bulk_subjects_logic(payload)
 
 
-@router.get("/exam/{exam_id}", response_model=List[SubjectResponse], status_code=status.HTTP_200_OK)
+@router.get("/exam/{exam_id}", response_model=ExamWithSubjectsResponse,response_model_exclude_none=True, status_code=status.HTTP_200_OK)
 async def get_all_subjects_by_exam(exam_id: str):
     """
     Fetch clean high-level subject list items filtered specifically by parent identity parameters.
+    Returns live synchronized top-level descriptive elements to secure client UI state pipelines.
     """
     return await get_all_subjects_by_exam_logic(exam_id)
 
 
-@router.get("/{subject_id}", response_model=SubjectWithChaptersResponse, status_code=status.HTTP_200_OK)
+@router.get("/{subject_id}", response_model=SubjectWithChaptersResponse,response_model_exclude_none=True, status_code=status.HTTP_200_OK)
 async def get_current_subject(subject_id: str):
     """
     Retrieve the granular configuration details of a single subject including all its dynamic nested chapter sub-items.

@@ -1,9 +1,10 @@
 import uuid
 from app.config.db import get_collection
 from fastapi import HTTPException, status
-from app.utils.db_helpers import execute_smart_bulk_insert, populate_parent_with_children
+from app.utils.db_helpers import execute_smart_bulk_insert, populate_parent_with_children,generate_semantic_id
 from app.schemas.subject_schemas import SubjectCreate, BulkSubjectCreate
 from app.schemas.chapter_schemas import ChapterNestedResponse  # Injected dynamic mapping reference
+
 
 
 async def create_subject_logic(payload: SubjectCreate)->dict: 
@@ -23,7 +24,7 @@ async def create_subject_logic(payload: SubjectCreate)->dict:
     
     insert_data = payload.model_dump()
     insert_data["name"] = name
-    insert_data["subject_id"] = f"sub_{uuid.uuid4().hex[:6]}"
+    insert_data["subject_id"] = generate_semantic_id(prefix="sub", content_value=name)
     
     await subject_collection.insert_one(insert_data)
     
@@ -57,10 +58,10 @@ async def create_bulk_subjects_logic(payload: BulkSubjectCreate) -> dict:
 
     return result
 
-async def get_all_subjects_by_exam_logic(exam_id: str) -> list:
+async def get_all_subjects_by_exam_logic(exam_id: str) -> dict:
     """
-    Retrieves flat standalone subjects matching a target exam_id configuration constraint.
-    Drops heavy nested child lookups to prevent response payload inflation at high scale.
+    Retrieves flat standalone subjects wrapped under live top-level exam metadata elements.
+    Reuses the core generic populate helper to handle synchronization and error states automatically.
     """
     if not exam_id:
         raise HTTPException(
@@ -68,15 +69,18 @@ async def get_all_subjects_by_exam_logic(exam_id: str) -> list:
             detail="The operational tracking search query property exam_id must be supplied."
         )
         
-    subject_collection = get_collection("subjects")
-    subjects_cursor = subject_collection.find({"exam_id": exam_id})
-    subjects = await subjects_cursor.to_list(length=100)
+    # AUTOMATIC REUSE: Invoking our centralized helper framework in one shot!
+    aggregated_data = await populate_parent_with_children(
+        parent_id=exam_id,
+        parent_collection="exams",
+        parent_id_field="exam_id",
+        parent_name_field="name",
+        child_collection="subjects",
+        child_lookup_field="exam_id",
+        child_schema_model=None  # Keeping it flat as raw database output dict items
+    )
     
-    for subject in subjects:
-        if "_id" in subject:
-            del subject["_id"]
-            
-    return subjects
+    return aggregated_data
 
 
 async def get_current_subject_with_chapters_logic(subject_id: str) -> dict:

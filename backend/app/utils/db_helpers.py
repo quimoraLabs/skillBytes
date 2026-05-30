@@ -181,5 +181,9 @@ async def populate_parent_with_children(
         "description": parent_doc.get("description", None),
         f"{child_collection}": cleaned_children
     }
+    # SMART FIX: Dynamically strip out the description property if it evaluates to None or empty
+    if not response_payload.get("description"):
+        del response_payload["description"]
+
     
     return response_payload
