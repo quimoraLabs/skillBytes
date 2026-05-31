@@ -4,7 +4,7 @@ from app.config.db import client
 from app.routes.auth import router as auth_router
 from app.routes.exam import router as exam_router
 from app.routes.subject import router as subject_router
-# from app.routes.chapter import router as chapter_router
+from app.routes.chapter import router as chapter_router
 # from app.routes.quiz import router as quiz_router
 
 
@@ -38,7 +38,7 @@ async def startup_db_client():
 app.include_router(auth_router)
 app.include_router(exam_router)
 app.include_router(subject_router)
-# app.include_router(chapter_router)
+app.include_router(chapter_router)
 # app.include_router(quiz_router)
 
 # Base Route

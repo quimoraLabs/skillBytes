@@ -188,3 +188,45 @@ async def populate_parent_with_children(
 
     
     return response_payload
+
+# =====================================================================
+# REUSABLE DATABASE RELATIONAL AND DUPLICATION SANITY CHECKER
+# =====================================================================
+async def validate_relational_integrity_and_duplicates(
+    parent_collection: str,
+    parent_lookup_key: str,
+    parent_lookup_value: str,
+    child_collection: str,
+    child_match_field: str,
+    child_match_value: str,
+    parent_error_msg: str = None,
+    duplicate_error_msg: str = None
+) -> None:
+    """
+    Enforces relational design consistency and boundary duplication logic.
+    1. Validates that the targeted parent identity node exists in the system track.
+    2. Runs a case-insensitive check to prevent sub-item item collisions.
+    """
+    p_coll = get_collection(parent_collection)
+    c_coll = get_collection(child_collection)
+    
+    # 1. Execute strict parent record existence validation
+    parent_exists = await p_coll.find_one({parent_lookup_key: parent_lookup_value})
+    if not parent_exists:
+        error_detail = parent_error_msg or f"Parent cross-reference tracking token '{parent_lookup_value}' not found inside '{parent_collection}'."
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=error_detail
+        )
+        
+    # 2. Execute strict case-insensitive duplication check bound by the common parent track
+    duplicate_check = await c_coll.find_one({
+        parent_lookup_key: parent_lookup_value,
+        child_match_field: {"$regex": f"^{child_match_value.strip()}$", "$options": "i"}
+    })
+    if duplicate_check:
+        error_detail = duplicate_error_msg or f"An entity matching value '{child_match_value}' already exists under this parent tracking boundary."
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=error_detail
+        )
