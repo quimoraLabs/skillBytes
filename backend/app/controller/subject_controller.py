@@ -2,6 +2,7 @@ import uuid
 from app.config.db import get_collection
 from fastapi import HTTPException, status
 from app.utils.db_helpers import execute_smart_bulk_insert, populate_parent_with_children,generate_semantic_id
+from app.utils.filter_helpers import populate_all_parents_with_children_paginated
 from app.schemas.subject_schemas import SubjectCreate, BulkSubjectCreate
 from app.schemas.chapter_schemas import ChapterNestedResponse  # Injected dynamic mapping reference
 
@@ -58,29 +59,21 @@ async def create_bulk_subjects_logic(payload: BulkSubjectCreate) -> dict:
 
     return result
 
-async def get_all_subjects_by_exam_logic(exam_id: str) -> dict:
+async def get_all_subjects_by_exam_logic(page: int = 1, limit: int = 10) -> dict:
     """
-    Retrieves flat standalone subjects wrapped under live top-level exam metadata elements.
-    Reuses the core generic populate helper to handle synchronization and error states automatically.
+    Retrieves the complete list of exams with their subjects using the new bulk paginated utility.
+    No local looping required here; offloads structural grouping tasks to the specialized wrapper.
     """
-    if not exam_id:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, 
-            detail="The operational tracking search query property exam_id must be supplied."
-        )
-        
-    # AUTOMATIC REUSE: Invoking our centralized helper framework in one shot!
-    aggregated_data = await populate_parent_with_children(
-        parent_id=exam_id,
+    # Simply forwarding the configuration layout directly to our new dedicated helper
+    aggregated_response = await populate_all_parents_with_children_paginated(
         parent_collection="exams",
-        parent_id_field="exam_id",
-        parent_name_field="name",
         child_collection="subjects",
         child_lookup_field="exam_id",
-        child_schema_model=None  # Keeping it flat as raw database output dict items
+        page=page,
+        limit=limit
     )
     
-    return aggregated_data
+    return aggregated_response
 
 
 async def get_current_subject_with_chapters_logic(subject_id: str) -> dict:

@@ -2,9 +2,10 @@ import uuid
 import copy
 import logging
 from datetime import datetime
-from typing import List, Dict, Any, Optional
+from typing import  Any, Optional
 from fastapi import HTTPException, status
 from app.config.db import get_collection
+
 
 # Configure minimal structural tracking for unexpected parsing errors
 logger = logging.getLogger("uvicorn.error")

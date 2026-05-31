@@ -1,15 +1,30 @@
-from fastapi import APIRouter, status
-from typing import List
+from fastapi import APIRouter, status, Query
+# from typing import List
 from app.controller.subject_controller import (
     create_subject_logic, 
     create_bulk_subjects_logic, 
     get_all_subjects_by_exam_logic,
     get_current_subject_with_chapters_logic
 )
-from app.schemas.subject_schemas import SubjectCreate, SubjectResponse, BulkSubjectCreate ,ExamWithSubjectsResponse
+from app.schemas.subject_schemas import (
+    SubjectCreate, 
+    SubjectResponse, 
+    BulkSubjectCreate,
+    ExamWithSubjectsResponse  # 
+)
 from app.schemas.chapter_schemas import SubjectWithChaptersResponse  # Validates the detail view structure
+from pydantic import BaseModel
+
 
 router = APIRouter(prefix="/subjects", tags=["Subjects"])
+
+# Use built-in lowercase list and dict if running on Python 3.9+
+# This eliminates the need to import 'List' from the typing module
+class PaginatedExamResponse(BaseModel):
+    """Wrapper schema to validate the top-level paginated dictionary structure."""
+    exams: list[ExamWithSubjectsResponse]  # Standard lowercase list configuration
+    pagination: dict                      # Standard lowercase dictionary metadata
+
 
 @router.post("/", response_model=SubjectResponse, status_code=status.HTTP_201_CREATED)
 async def create_subject(payload: SubjectCreate):
@@ -27,16 +42,20 @@ async def create_bulk_subjects(payload: BulkSubjectCreate):
     return await create_bulk_subjects_logic(payload)
 
 
-@router.get("/exam/{exam_id}", response_model=ExamWithSubjectsResponse,response_model_exclude_none=True, status_code=status.HTTP_200_OK)
-async def get_all_subjects_by_exam(exam_id: str):
+# FIXED: Removed {exam_id} path parameter and added pagination query strings
+@router.get("/exams", response_model=PaginatedExamResponse, response_model_exclude_none=True, status_code=status.HTTP_200_OK)
+async def get_all_subjects_by_exam(
+    page: int = Query(default=1, ge=1, description="The active page index split boundary"),
+    limit: int = Query(default=10, ge=1, le=100, description="The continuous layout items row limit count")
+):
     """
-    Fetch clean high-level subject list items filtered specifically by parent identity parameters.
-    Returns live synchronized top-level descriptive elements to secure client UI state pipelines.
+    Fetch all high-level exams with their associated subjects driven by loop-based pagination utility execution.
     """
-    return await get_all_subjects_by_exam_logic(exam_id)
+    # Passing query bounds down to the controller logic layer safely
+    return await get_all_subjects_by_exam_logic(page=page, limit=limit)
 
 
-@router.get("/{subject_id}", response_model=SubjectWithChaptersResponse,response_model_exclude_none=True, status_code=status.HTTP_200_OK)
+@router.get("/{subject_id}", response_model=SubjectWithChaptersResponse, response_model_exclude_none=True, status_code=status.HTTP_200_OK)
 async def get_current_subject(subject_id: str):
     """
     Retrieve the granular configuration details of a single subject including all its dynamic nested chapter sub-items.
