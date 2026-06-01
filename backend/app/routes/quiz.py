@@ -1,26 +1,50 @@
-# from fastapi import APIRouter, status, HTTPException
-# from app.schemas.app_schemas import QuizCreate, QuizResponse
-# from app.controller.quiz_controller import create_quiz_logic,get_all_quizzes_logic
+from fastapi import APIRouter, status, Query
+from app.schemas.quiz_schemas import (
+    QuizCreate,
+    QuizResponse,
+    BulkQuizCreate,
+    PaginatedQuizResponse,
+    ChapterWithQuizzesResponse
+)
+from app.controller.quiz_controller import (
+    create_quiz_logic,
+    create_quizzes_bulk_logic,
+    get_all_quizzes_by_chapters_logic,
+    get_current_quiz_details_logic
+)
 
-# router = APIRouter()
+router = APIRouter(prefix="/quizzes", tags=["Quizzes"])
 
-# @router.post(
-#     "/quizzes", 
-#     response_model=QuizResponse, 
-#     status_code=status.HTTP_201_CREATED,
-#     tags=["Quizzes"]
-# )
-# async def create_quiz(payload: QuizCreate):
-#     try:
-#         # Convert Pydantic model to clean dictionary and pass to controller
-#         quiz_data = await create_quiz_logic(payload.dict())
-#         return quiz_data
-#     except Exception as e:
-#         raise HTTPException(
-#             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-#             detail=f"An error occurred while creating the quiz: {str(e)}"
-#         )
+@router.post("/", response_model=QuizResponse, status_code=status.HTTP_201_CREATED)
+async def create_quiz(payload: QuizCreate):
+    """
+    Create a single standalone quiz instance tracked against a parent chapter.
+    """
+    return await create_quiz_logic(payload)
 
-# @router.get("/{chapter_id}")
-# async def get_all_quizzes(chapter_id: str):
-#     return await get_all_quizzes_logic(chapter_id)
+
+@router.post("/bulk", status_code=status.HTTP_201_CREATED)
+async def create_bulk_quizzes(payload: BulkQuizCreate):
+    """
+    Batch process and ingest multiple quiz profiles concurrently under a chapter.
+    """
+    return await create_quizzes_bulk_logic(payload)
+
+
+@router.get("/chapters", response_model=PaginatedQuizResponse, response_model_exclude_none=True, status_code=status.HTTP_200_OK)
+async def get_all_quizzes_by_chapters(
+    page: int = Query(default=1, ge=1, description="The active page index split boundary"),
+    limit: int = Query(default=10, ge=1, le=100, description="The row limit count")
+):
+    """
+    Fetch all high-level chapters with their associated quizzes driven by pagination utility execution.
+    """
+    return await get_all_quizzes_by_chapters_logic(page=page, limit=limit)
+
+
+@router.get("/{quiz_id}", status_code=status.HTTP_200_OK)
+async def get_current_quiz_details(quiz_id: str):
+    """
+    Retrieve the granular details of a single quiz including all its nested questions.
+    """
+    return await get_current_quiz_details_logic(quiz_id)

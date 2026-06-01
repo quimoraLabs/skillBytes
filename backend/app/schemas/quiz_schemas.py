@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import List
+# from typing import List
 
 # =====================================================================
 # 1. NESTED QUIZ STRUCTURE FOR LOOKUPS
@@ -17,9 +17,9 @@ class QuizNestedInsideChapterResponse(BaseModel):
 class ChapterWithQuizzesResponse(BaseModel):
     """The master discovery schema returned when fetching details of a single chapter along with its child quizzes"""
     chapter_id: str = Field(..., example="ch_app_2026_k8j9l0", description="The system identity token tracking key identifier")
-    chapter_title: str = Field(..., example="Application Layer", description="Live chapter title tracking node mapped dynamically from database")
+    chapter_name: str = Field(..., example="Application Layer", description="Live chapter name tracking node mapped dynamically from database")
     # Clean local array binding! ZERO CROSS MODULE COUPLING!
-    quizzes: List[QuizNestedInsideChapterResponse] = Field(default=[], description="Flat list configuration tracking active child quiz nodes available")
+    quizzes: list[QuizNestedInsideChapterResponse] = Field(default=[], description="Flat list configuration tracking active child quiz nodes available")
 
 
 # =====================================================================
@@ -31,3 +31,13 @@ class QuizCreate(BaseModel):
 
 class QuizResponse(QuizCreate):
     quiz_id: str = Field(..., example="qz_lay_2026_z9y8x7")
+
+class BulkQuizCreate(BaseModel):
+    """Missing Schema for batch ingesting quizzes"""
+    chapter_id: str = Field(..., example="chapter_app_2026_k8j9l0", description="The target parent chapter identifier")
+    titles: list[str] = Field(..., example=["Quiz 1: Basics", "Quiz 2: Advanced"], description="Array of titles for bulk insert")
+
+class PaginatedQuizResponse(BaseModel):
+    """Missing Schema for fetching chapters with nested quizzes cleanly"""
+    chapters: list[ChapterWithQuizzesResponse]
+    pagination: dict

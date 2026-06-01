@@ -57,7 +57,7 @@ async def get_all_chapters_by_subject(
     return await get_all_chapters_logic(page=page, limit=limit)
 
 
-@router.get("/chapter/{chapter_id}", response_model=ChapterWithQuizzesResponse, response_model_exclude_none=True, status_code=status.HTTP_200_OK)
+@router.get("/{chapter_id}", response_model=ChapterWithQuizzesResponse, response_model_exclude_none=True, status_code=status.HTTP_200_OK)
 async def get_current_chapter_details(chapter_id: str):
     """
     Retrieve the granular configuration details of a single chapter including all its dynamic nested quiz sub-items.

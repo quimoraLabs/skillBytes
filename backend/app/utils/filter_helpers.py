@@ -79,11 +79,14 @@ async def populate_all_parents_with_children_paginated(
                 del child[child_lookup_field]
                 
             cleaned_children.append(child)
+
+        # FIX 2: Dynamic fallback check for string name fields (resolves both 'name' and 'title')
+        resolved_parent_name = parent.get("name") or parent.get("title") or "Untitled Node"
             
         # Construct the unified structural layout node for this iteration
         node = {
             f"{parent_type_prefix}_id": custom_parent_id_str,
-            f"{parent_type_prefix}_name": parent.get("name"),
+            f"{parent_type_prefix}_name": resolved_parent_name,
             "description": parent.get("description", ""),
             f"{child_collection}": cleaned_children
         }
