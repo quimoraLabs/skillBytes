@@ -6,6 +6,8 @@ from app.routes.exam import router as exam_router
 from app.routes.subject import router as subject_router
 from app.routes.chapter import router as chapter_router
 from app.routes.quiz import router as quiz_router
+from app.routes.question import router as question_router
+from app.routes.attempt import router as attempt_router
 
 
 # FastAPI ka instance banaya
@@ -40,6 +42,8 @@ app.include_router(exam_router)
 app.include_router(subject_router)
 app.include_router(chapter_router)
 app.include_router(quiz_router)
+app.include_router(question_router)
+app.include_router(attempt_router)
 
 # Base Route
 @app.get("/")

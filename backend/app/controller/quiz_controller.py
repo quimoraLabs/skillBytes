@@ -1,7 +1,8 @@
+import random
 from fastapi import HTTPException, status
 from app.config.db import get_collection
 from app.schemas.quiz_schemas import QuizCreate, BulkQuizCreate
-from app.utils.db_helpers import execute_smart_bulk_insert, populate_parent_with_children, generate_semantic_id,validate_relational_integrity_and_duplicates
+from app.utils.db_helpers import execute_smart_bulk_insert, populate_parent_with_children, generate_semantic_id, validate_relational_integrity_and_duplicates
 from app.utils.filter_helpers import populate_all_parents_with_children_paginated
 
 # =====================================================================
@@ -32,7 +33,7 @@ async def create_quiz_logic(payload: QuizCreate) -> dict:
     # Database document injection configuration map
     insert_data = payload.model_dump()
     insert_data["title"] = title
-    insert_data["quiz_id"] = generate_semantic_id(prefix="qz", content_value=title)
+    insert_data["quiz_id"] = generate_semantic_id(prefix="quiz", content_value=title)
     insert_data["total_questions"] = 0  
     
     await quiz_collection.insert_one(insert_data)
@@ -105,10 +106,26 @@ async def get_current_quiz_details_logic(quiz_id: str):
         child_lookup_field="quiz_id",
         child_schema_model=None
     )
-    print(aggregated_data)
-    
+
+    raw_questions = aggregated_data.get("questions", [])
+    formatted_questions = []
+
+    for qn in raw_questions:
+        db_options = qn.get("options") or []
+        flat_options = [opt.get("text") for opt in db_options if isinstance(opt, dict)]
+
+        real_correct_txt = ""
+
+        formatted_questions.append({
+            "question_id": qn.get("question_id"),
+            "question_text": qn.get("question_text"),
+            "options": flat_options,
+            "correct_answer": flat_options[random.randint(0, len(flat_options)-1)] if flat_options else "",
+            "marks": qn.get("marks", 1)
+        })
+
     return {
         "quiz_id": aggregated_data.get("quiz_id"),
-        "quiz_title": aggregated_data.get("quizze_name"),
-        "questions": aggregated_data.get("questions", [])
+        "quiz_title": quiz_exists.get("title") or aggregated_data.get("quiz_name") or aggregated_data.get("title") or "Untitled Quiz",
+        "questions": formatted_questions
     }

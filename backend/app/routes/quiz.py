@@ -13,6 +13,8 @@ from app.controller.quiz_controller import (
     get_current_quiz_details_logic
 )
 
+from app.schemas.question_schemas import QuizWithQuestionsResponse
+
 router = APIRouter(prefix="/quizzes", tags=["Quizzes"])
 
 @router.post("/", response_model=QuizResponse, status_code=status.HTTP_201_CREATED)
@@ -42,7 +44,7 @@ async def get_all_quizzes_by_chapters(
     return await get_all_quizzes_by_chapters_logic(page=page, limit=limit)
 
 
-@router.get("/{quiz_id}", status_code=status.HTTP_200_OK)
+@router.get("/{quiz_id}",response_model=QuizWithQuestionsResponse, status_code=status.HTTP_200_OK)
 async def get_current_quiz_details(quiz_id: str):
     """
     Retrieve the granular details of a single quiz including all its nested questions.

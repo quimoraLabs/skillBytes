@@ -1,6 +1,26 @@
 from typing import Dict, Any, Tuple ,List
 from app.config.db import get_collection
 
+def remove_key_recursively(data: any, key_to_remove: str = "isCorrect") -> any:
+    """
+    Recursively scans and removes a specific key from any complex nested dictionary or list.
+    Ensures student API responses are sanitized to prevent cheat leaks.
+    """
+    if isinstance(data, dict):
+        # Create a new dictionary excluding the target key
+        return {
+            k: remove_key_recursively(v, key_to_remove) 
+            for k, v in data.items() if k != key_to_remove
+        }
+    elif isinstance(data, list):
+        # Process every item in the list recursively
+        return [remove_key_recursively(item, key_to_remove) for item in data]
+    
+    # Return primitive data types as-is
+    return data
+
+
+
 def get_page_meta(total_items: int, page: int, limit: int) -> Tuple[Dict[str, Any], int]:
     """
     Simple mathematical engine to return standard page controls and calculate query slice offset.
@@ -51,7 +71,14 @@ async def populate_all_parents_with_children_paginated(
     paginated_parents = raw_parents[skip_offset : skip_offset + limit]
     
     paginated_output_list = []
-    parent_type_prefix = parent_collection.rstrip('s')  # Converts "exams" to "exam"
+    collection_prefixes = {
+        "exams": "exam",
+        "subjects": "subject",
+        "chapters": "chapter",
+        "quizzes": "quiz",        
+        "questions": "question"
+    }
+    parent_type_prefix = collection_prefixes.get(parent_collection, parent_collection.rstrip('s')) # Converts "exams" to "exam"
     
     # 5. Continuous loop execution across the sliced dataset array
     for parent in paginated_parents:
