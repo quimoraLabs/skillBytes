@@ -17,7 +17,7 @@ class QuizNestedInsideChapterResponse(BaseModel):
 class ChapterWithQuizzesResponse(BaseModel):
     """The master discovery schema returned when fetching details of a single chapter along with its child quizzes"""
     chapter_id: str = Field(..., example="ch_app_2026_k8j9l0", description="The system identity token tracking key identifier")
-    chapter_name: str = Field(..., example="Application Layer", description="Live chapter name tracking node mapped dynamically from database")
+    chapter_title: str = Field(..., example="Application Layer", description="Live chapter name tracking node mapped dynamically from database")
     # Clean local array binding! ZERO CROSS MODULE COUPLING!
     quizzes: list[QuizNestedInsideChapterResponse] = Field(default=[], description="Flat list configuration tracking active child quiz nodes available")
 
