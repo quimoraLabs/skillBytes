@@ -10,17 +10,17 @@ from app.routes.question import router as question_router
 from app.routes.attempt import router as attempt_router
 
 
-# FastAPI ka instance banaya
+# Intialize FastAPI app
 app = FastAPI(
     title="SkillBytes API",
     description="SkillBytes assignment backend",
     version="1.0.0"
 )
 
-# CORS Middleware (Taaki jab frontend se connect karein toh error na aaye)
+# Cors Middleware - for development, allow all origins. In production, this should be restricted.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Abhi ke liye sab allowed hai
+    allow_origins=["*"],  # Allow all origins for development. Change this in production!
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

@@ -13,7 +13,7 @@ async def create_exam(payload: ExamCreate):
     """
     return await create_exam_logic(payload)
 
-@router.get("/all",response_model=List[ExamResponse], status_code=status.HTTP_200_OK)
+@router.get("/",response_model=List[ExamResponse], status_code=status.HTTP_200_OK)
 async def get_all_exams():
     """
     Retrieve all registered exams. This returns high-level objects without nested children for optimal scale performance.
