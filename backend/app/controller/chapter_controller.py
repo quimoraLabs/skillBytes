@@ -2,7 +2,7 @@ import uuid
 from app.config.db import get_collection
 from fastapi import HTTPException, status
 from app.utils.db_helpers import execute_smart_bulk_insert, populate_parent_with_children,generate_semantic_id
-from app.utils.filter_helpers import populate_all_parents_with_children_paginated
+from app.utils.filter_helpers import populate_children_paginated
 from app.schemas.chapter_schemas import ChapterCreate, BulkChapterCreate
 from app.schemas.quiz_schemas import QuizNestedInsideChapterResponse
 
@@ -18,12 +18,12 @@ async def create_chapter_logic(payload: ChapterCreate) -> dict:
     subject_collection = get_collection("subjects")
     
     subject_id = payload.subject_id
-    title = payload.title.strip() if payload.title else ""
+    name = payload.name.strip() if payload.name else ""
 
-    if not subject_id or not title:
+    if not subject_id or not name:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, 
-            detail="The tracking target configurations subject_id and validation title entries are required attributes."
+            detail="The tracking target configurations subject_id and validation name entries are required attributes."
         )
         
     # Relational Integrity Check: Verify that the parent subject exists to prevent orphaned records
@@ -37,18 +37,18 @@ async def create_chapter_logic(payload: ChapterCreate) -> dict:
     # Duplication Check: Ensure case-insensitive uniqueness inside the same subject track boundary
     duplicate_chapter = await chapter_collection.find_one({
         "subject_id": subject_id,
-        "title": {"$regex": f"^{title}$", "$options": "i"}
+        "name": {"$regex": f"^{name}$", "$options": "i"}
     })
     if duplicate_chapter:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"A chapter mapped with the title '{title}' already exists under this target subject profile."
+            detail=f"A chapter mapped with the name '{name}' already exists under this target subject profile."
         )
     
     # Structure database configuration entity block map securely
     insert_data = payload.model_dump()
-    insert_data["title"] = title
-    insert_data["chapter_id"] = generate_semantic_id(prefix="chapter", content_value=title)
+    insert_data["name"] = name
+    insert_data["chapter_id"] = generate_semantic_id(prefix="chapter", content_value=name)
     
     await chapter_collection.insert_one(insert_data)
     
@@ -66,7 +66,7 @@ async def create_chapters_bulk_logic(payload: BulkChapterCreate):
     # Left intact as per user requests for subsequent modular revisions
     data = payload.dict()
     subject_id = data.get("subject_id")
-    titles = data.get("titles")
+    names = data.get("names")
     
     if not subject_id:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="subject_id is required!")
@@ -77,16 +77,14 @@ async def create_chapters_bulk_logic(payload: BulkChapterCreate):
         parent_id_value=subject_id,
         child_id_key="chapter_id",
         child_id_prefix="chapter",
-        items_list=titles,
-        match_field_in_db="title"
+        items_list=names,
+        match_field_in_db="name"
     )
     return result
 
 async def get_all_chapters_logic(page: int = 1, limit: int = 10):
-    # Adjusted parameter metrics layout signatures to align with structural router expectations 
-    from app.utils.filter_helpers import populate_all_parents_with_children_paginated
-    aggregated_response = await populate_all_parents_with_children_paginated(
-        parent_collection="subjects",
+
+    aggregated_response = await populate_children_paginated(
         child_collection="chapters",
         child_lookup_field="subject_id",
         page=page,
@@ -101,7 +99,7 @@ async def get_current_chapter_with_quizzes_logic(chapter_id: str):
     all_existing_chapters = await chapter_collection.find({}).to_list(length=5)
     # print("--- ALL EXISTING CHAPTERS IN DB ---")
     # for doc in all_existing_chapters:
-    #     print(f"Chapter ID: {doc.get('chapter_id')} | Subject ID: {doc.get('subject_id')} | Title: {doc.get('title')}")
+    #     print(f"Chapter ID: {doc.get('chapter_id')} | Subject ID: {doc.get('subject_id')} | name: {doc.get('name')}")
     # print("-----------------------------------")
 
     # 1. Fetch the raw chapter document first to verify existence
@@ -120,7 +118,7 @@ async def get_current_chapter_with_quizzes_logic(chapter_id: str):
         parent_id=chapter_id,
         parent_collection="chapters",
         parent_id_field="chapter_id",
-        parent_name_field="title",
+        parent_name_field="name",
         child_collection="quizzes",
         child_lookup_field="chapter_id",
         child_schema_model=None
@@ -132,6 +130,6 @@ async def get_current_chapter_with_quizzes_logic(chapter_id: str):
     # 4. Return clean dictionary structured according to response schema
     return {
         "chapter_id": aggregated_data.get("chapter_id"),
-        "chapter_title": aggregated_data.get("chapter_name"),
+        "chapter_name": aggregated_data.get("chapter_name"),
         "quizzes": aggregated_data.get("quizzes", [])
     }

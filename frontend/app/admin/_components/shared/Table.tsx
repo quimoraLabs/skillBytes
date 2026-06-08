@@ -1,14 +1,17 @@
 "use client";
 
-import React from 'react';
+import React from "react";
 
 // 1. Fixed the structural array type syntax definition for TypeScript matching your data schemas
 interface TableProps {
   data: {
     id?: string;
-    name: string;
-    description: string;
-  }[]; 
+    subject_id?: string; // Optional field for subjects to link back to their parent exam
+    examId?: string; // Optional field for subjects to link back to their parent exam
+    name?: string;
+    title?: string; // In case some data nodes use 'title' instead of 'name'
+    description?: string;
+  }[];
   loading: boolean;
   header: string[];
 }
@@ -44,15 +47,21 @@ const Table = ({ data, loading, header }: TableProps) => {
         </thead>
         <tbody className="divide-y divide-gray-50 font-sans text-gray-600">
           {/* 2. Map row by row cleanly using data elements */}
-          {data.map((item, index) => (
-            <tr key={item.id || index} className="hover:bg-gray-200/50 transition-colors">
+          {data?.map((item, index) => (
+            <tr key={index} className="hover:bg-gray-200/50 transition-colors">
               {/* Render dynamic matching item values per concrete schema cell */}
               <td className="py-3 px-4 font-semibold text-gray-800">
-                {item.name}
+                {index + 1}{" "}
+                {/* Simple index-based ID for display, can be replaced with item.id if available */}
               </td>
-              <td className="py-3 px-4 text-gray-400 max-w-xs truncate">
-                {item.description || "—"}
+              <td className="py-3 px-4 font-semibold text-gray-800">
+                {item.name || item.title}
               </td>
+              {item?.description && (
+                <td className={`py-3 px-4 text-gray-400 max-w-xs truncate`}>
+                  {item?.description}
+                </td>
+              )}
             </tr>
           ))}
         </tbody>

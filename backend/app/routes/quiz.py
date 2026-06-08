@@ -3,16 +3,16 @@ from app.schemas.quiz_schemas import (
     QuizCreate,
     QuizResponse,
     BulkQuizCreate,
-    PaginatedQuizResponse,
+    QuizListResponse,
     ChapterWithQuizzesResponse
 )
 from app.controller.quiz_controller import (
     create_quiz_logic,
     create_quizzes_bulk_logic,
-    get_all_quizzes_by_chapters_logic,
+    get_all_quizzes_logic,
     get_current_quiz_details_logic
 )
-
+from app.schemas.pagination_schemas import PaginatedResponse
 from app.schemas.question_schemas import QuizWithQuestionsResponse
 
 router = APIRouter(prefix="/quizzes", tags=["Quizzes"])
@@ -33,7 +33,7 @@ async def create_bulk_quizzes(payload: BulkQuizCreate):
     return await create_quizzes_bulk_logic(payload)
 
 
-@router.get("/chapters", response_model=PaginatedQuizResponse, response_model_exclude_none=True, status_code=status.HTTP_200_OK)
+@router.get("/", response_model=PaginatedResponse[QuizListResponse], response_model_exclude_none=True, status_code=status.HTTP_200_OK)
 async def get_all_quizzes_by_chapters(
     page: int = Query(default=1, ge=1, description="The active page index split boundary"),
     limit: int = Query(default=10, ge=1, le=100, description="The row limit count")
@@ -41,7 +41,7 @@ async def get_all_quizzes_by_chapters(
     """
     Fetch all high-level chapters with their associated quizzes driven by pagination utility execution.
     """
-    return await get_all_quizzes_by_chapters_logic(page=page, limit=limit)
+    return await get_all_quizzes_logic(page=page, limit=limit)
 
 
 @router.get("/{quiz_id}",response_model=QuizWithQuestionsResponse, status_code=status.HTTP_200_OK)

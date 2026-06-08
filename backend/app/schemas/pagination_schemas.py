@@ -1,5 +1,5 @@
 from typing import Generic, TypeVar, List
-from pydantic import BaseModel
+from pydantic import BaseModel,Field
 
 # Create a Generic Type Variable
 T = TypeVar('T')
@@ -16,7 +16,8 @@ class PaginationMeta(BaseModel):
 class PaginatedResponse(BaseModel, Generic[T]):
     """
     A single reusable master utility wrapper for any paginated response.
-    All internal schemas share this core structural pipeline.
+    All internal child schemas share this core structural pipeline.
     """
-    data: List[T]  # This dynamically adapts to Exams, Chapters, or Questions
-    pagination: PaginationMeta
+    # Master generic array envelope that adapts to subjects, chapters, or quizzes
+    data: List[T]
+    pagination: PaginationMeta = Field(..., description="Calculated slice navigation control block keys")

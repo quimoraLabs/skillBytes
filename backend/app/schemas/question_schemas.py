@@ -39,7 +39,7 @@ class QuestionNestedInsideQuizResponse(BaseModel):
 
 class QuizWithQuestionsResponse(BaseModel):
     quiz_id: str
-    quiz_title: str
+    quiz_name: str
     questions: List[QuestionNestedInsideQuizResponse] = Field(default=[])
 
 class PaginatedQuizWithQuestionsResponse(BaseModel):

@@ -1,10 +1,11 @@
 import { create } from "zustand";
+import { Chapter, ContentStoreState, Exam, PaginatedResponse, Subject } from "../admin/types/exam"; // Path check kar lijiye aapke folder structure ke hisab se
 import { apiClient } from "../lib/apiClient";
-import { ContentStoreState } from "../admin/types/exam";
 
 export const useContentStore = create<ContentStoreState>((set) => ({
   exams: [],
   subjects: [],
+  chapters: [],
   isLoading: false,
   error: null,
 
@@ -12,7 +13,7 @@ export const useContentStore = create<ContentStoreState>((set) => ({
   fetchExams: async () => {
     set({ isLoading: true, error: null });
     try {
-      const res = await apiClient.get("/exams/");
+      const res = await apiClient.get<Exam[]>("/exams/");
       set({ exams: res.data, isLoading: false });
     } catch (err: unknown) {
       set({ error: (err as Error).message, isLoading: false });
@@ -22,7 +23,7 @@ export const useContentStore = create<ContentStoreState>((set) => ({
   createExam: async (payload) => {
     set({ isLoading: true, error: null });
     try {
-      const res = await apiClient.post("/exams/", payload);
+      const res = await apiClient.post<Exam>("/exams/", payload);
       set((state) => ({ exams: [...state.exams, res.data], isLoading: false }));
       return { success: true };
     } catch (err: unknown) {
@@ -31,13 +32,16 @@ export const useContentStore = create<ContentStoreState>((set) => ({
     }
   },
 
-
-  // --- FUTURE SUBJECT LAYER (Saves you from creating a whole new store!) ---
-  fetchSubjectsByExam: async (examId) => {
+  // --- SUBJECT LAYER MATCHING YOUR SCHEMA ---
+  fetchSubjectsByExam: async (examId: string) => {
     set({ isLoading: true, error: null });
     try {
-      const res = await apiClient.get(`/subjects/?examId=${examId}`);
-      set({ subjects: res.data, isLoading: false });
+      const res = await apiClient.get<{ subjects: Subject[] } >(`/exams/${examId}`);
+      
+      // Backend object handle mapping: agar wrap hoke aaye toh res.data.subjects, varna seedhe array payload extraction
+      const subjectList = res.data.subjects;
+      
+      set({ subjects: subjectList, isLoading: false });
     } catch (err: unknown) {
       set({ error: (err as Error).message, isLoading: false });
     }
@@ -46,9 +50,56 @@ export const useContentStore = create<ContentStoreState>((set) => ({
   createSubject: async (payload) => {
     set({ isLoading: true, error: null });
     try {
-      const res = await apiClient.post("/subjects/", payload);
+      const res = await apiClient.post<Subject>("/subjects/", payload);
+      const newSubject = res.data;
+
       set((state) => ({
-        subjects: [...state.subjects, res.data],
+        subjects: [...state.subjects, newSubject],
+        isLoading: false,
+      }));
+      return { success: true };
+    } catch (err: unknown) {
+      set({ error: (err as Error).message, isLoading: false });
+      return { success: false };
+    }
+  },
+
+  getAllSubjects: async () => {
+    set({ isLoading: true, error: null });
+    try {
+      const res = await apiClient.get<PaginatedResponse<Subject>>("/subjects/");
+      set({ subjects: res.data.data, isLoading: false });
+    } catch (err: unknown) {
+      set({ error: (err as Error).message, isLoading: false });
+    }
+  },
+  
+  getAllChapters: async () => {
+    set({ isLoading: true, error: null });
+    try {
+      const res = await apiClient.get<PaginatedResponse<Chapter>>("/chapters/");
+      set({ chapters: res.data.data, isLoading: false });
+    } catch (err: unknown) {
+      set({ error: (err as Error).message, isLoading: false });
+    }
+  },
+
+  fetchChaptersBySubject: async (subjectId: string) => {
+    set({ isLoading: true, error: null });
+    try {
+      const res = await apiClient.get(`/subjects/${subjectId}`);
+      set({ chapters: res.data.chapters, isLoading: false });
+    } catch (err: unknown) {
+      set({ error: (err as Error).message, isLoading: false });
+    }
+  },
+
+  createChapter: async (payload) => {
+    set({ isLoading: true, error: null });
+    try {
+      const res = await apiClient.post(`/chapters/`, payload);
+      set((state) => ({
+        chapters: [...state.chapters, res.data],
         isLoading: false,
       }));
       return { success: true };

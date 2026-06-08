@@ -2,11 +2,11 @@ from fastapi import APIRouter, status, Query
 from app.schemas.chapter_schemas import (
     ChapterCreate, 
     ChapterResponse, 
+    ChapterListResponse, 
     BulkChapterCreate, 
-    SubjectWithChaptersResponse,
 
 )
-
+from app.schemas.pagination_schemas import PaginatedResponse
 from app.schemas.quiz_schemas import  ChapterWithQuizzesResponse
 from app.controller.chapter_controller import (
     create_chapter_logic,
@@ -18,13 +18,7 @@ from pydantic import BaseModel
 
 router = APIRouter(prefix="/chapters", tags=["Chapters"])
 
-# =====================================================================
-# WRAPPER SCHEMA FOR PAGINATED SUBJECT OUTPUT
-# =====================================================================
-class PaginatedSubjectResponse(BaseModel):
-    """Wrapper schema to validate the top-level paginated dictionary structure for subjects."""
-    subjects: list[SubjectWithChaptersResponse]
-    pagination: dict
+
 
 
 # =====================================================================
@@ -46,7 +40,7 @@ async def create_bulk_chapters(payload: BulkChapterCreate):
     return await create_chapters_bulk_logic(payload)
 
 
-@router.get("/subjects", response_model=PaginatedSubjectResponse, response_model_exclude_none=True, status_code=status.HTTP_200_OK)
+@router.get("/", response_model=PaginatedResponse[ChapterListResponse], response_model_exclude_none=True, status_code=status.HTTP_200_OK)
 async def get_all_chapters_by_subject(
     page: int = Query(default=1, ge=1, description="The active page index split boundary"),
     limit: int = Query(default=10, ge=1, le=100, description="The continuous layout items row limit count")

@@ -47,7 +47,7 @@ export default function WhatsAppQuizFlow() {
   return (
     <div className="flex flex-col h-screen bg-[#e5ddd5] overflow-hidden">
       
-      {/* 🟢 WhatsApp Application Sticky Header Title Workspace */}
+      {/* 🟢 WhatsApp Application Sticky Header name Workspace */}
       <div className="bg-[#075e54] text-white px-4 py-3 flex items-center shadow-md shrink-0">
         <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center font-bold text-emerald-800 mr-3">
           SB

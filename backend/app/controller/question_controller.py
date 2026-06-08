@@ -3,7 +3,7 @@ from fastapi import HTTPException, status
 from app.config.db import get_collection
 from app.utils.db_helpers import populate_parent_with_children ,execute_smart_bulk_insert,generate_semantic_id # For the get-details logic
 from app.schemas.question_schemas import SingleQuestionCreatePayload, BulkQuestionCreatePayload
-from app.utils.filter_helpers import populate_all_parents_with_children_paginated, remove_key_recursively
+from app.utils.filter_helpers import populate_children_paginated, remove_key_recursively
 
 # =====================================================================
 # 1. CREATE SINGLE QUESTION LOGIC
@@ -141,7 +141,7 @@ async def create_bulk_questions_logic(payload: BulkQuestionCreatePayload) -> dic
 
 async def get_all_questions_by_quizzes_logic(page: int = 1, limit: int = 10):
     # 1. Fetch paginated quiz documents with nested question children
-    aggregated_response = await populate_all_parents_with_children_paginated(
+    aggregated_response = await populate_children_paginated(
         parent_collection="quizzes",
         child_collection="questions",
         child_lookup_field="quiz_id",
@@ -177,7 +177,7 @@ async def get_all_questions_by_quizzes_logic(page: int = 1, limit: int = 10):
         # 4. Corrected mapping using 'quiz' properties instead of undefined variables
         formatted_quizzes.append({
             "quiz_id": quiz.get("quiz_id"),
-            "quiz_title": quiz.get("title") or quiz.get("quiz_name") or "Untitled Quiz",
+            "quiz_name": quiz.get("name") or quiz.get("quiz_name") or "Unnamed Quiz",
             "questions": formatted_questions
         })
 

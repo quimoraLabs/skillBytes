@@ -3,19 +3,19 @@ from fastapi import HTTPException, status
 from app.config.db import get_collection
 from app.schemas.quiz_schemas import QuizCreate, BulkQuizCreate
 from app.utils.db_helpers import execute_smart_bulk_insert, populate_parent_with_children, generate_semantic_id, validate_relational_integrity_and_duplicates
-from app.utils.filter_helpers import populate_all_parents_with_children_paginated
+from app.utils.filter_helpers import populate_children_paginated
 
 # =====================================================================
 # 1. CREATE SINGLE QUIZ LOGIC
 # =====================================================================
 async def create_quiz_logic(payload: QuizCreate) -> dict:
     quiz_collection = get_collection("quizzes")
-    title = payload.title.strip() if payload.title else ""
+    name = payload.name.strip() if payload.name else ""
     
-    if not payload.chapter_id or not title:
+    if not payload.chapter_id or not name:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="The tracking target configurations chapter_id and title entries are required attributes."
+            detail="The tracking target configurations chapter_id and name entries are required attributes."
         )
 
     # MAGIC HAPPENS HERE: Your reusable validator replaces 20 lines of messy code
@@ -24,16 +24,16 @@ async def create_quiz_logic(payload: QuizCreate) -> dict:
         parent_lookup_key="chapter_id",
         parent_lookup_value=payload.chapter_id,
         child_collection="quizzes",
-        child_match_field="title",
-        child_match_value=title,
+        child_match_field="name",
+        child_match_value=name,
         parent_error_msg=f"The parent chapter identity tracking code '{payload.chapter_id}' does not exist in the database.",
-        duplicate_error_msg=f"A quiz mapped with the title '{title}' already exists under this target chapter profile."
+        duplicate_error_msg=f"A quiz mapped with the name '{name}' already exists under this target chapter profile."
     )
         
     # Database document injection configuration map
     insert_data = payload.model_dump()
-    insert_data["title"] = title
-    insert_data["quiz_id"] = generate_semantic_id(prefix="quiz", content_value=title)
+    insert_data["name"] = name
+    insert_data["quiz_id"] = generate_semantic_id(prefix="quiz", content_value=name)
     insert_data["total_questions"] = 0  
     
     await quiz_collection.insert_one(insert_data)
@@ -50,7 +50,7 @@ async def create_quiz_logic(payload: QuizCreate) -> dict:
 async def create_quizzes_bulk_logic(payload: BulkQuizCreate):
     data = payload.model_dump()
     chapter_id = data.get("chapter_id")
-    titles = data.get("titles")
+    names = data.get("names")
     
     if not chapter_id:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="chapter_id is required!")
@@ -61,8 +61,8 @@ async def create_quizzes_bulk_logic(payload: BulkQuizCreate):
         parent_id_value=chapter_id,
         child_id_key="quiz_id",
         child_id_prefix="quiz",
-        items_list=titles,
-        match_field_in_db="title"
+        items_list=names,
+        match_field_in_db="name"
     )
     return result
 
@@ -70,10 +70,9 @@ async def create_quizzes_bulk_logic(payload: BulkQuizCreate):
 # =====================================================================
 # 3. GET PAGINATED QUIZZES BY CHAPTER (PERFECTLY SYNCED WITH UTILITY)
 # =====================================================================
-async def get_all_quizzes_by_chapters_logic(page: int = 1, limit: int = 10):
+async def get_all_quizzes_logic(page: int = 1, limit: int = 10):
     # Now perfectly matching structural schema constraints
-    aggregated_response = await populate_all_parents_with_children_paginated(
-        parent_collection="chapters",
+    aggregated_response = await populate_children_paginated(
         child_collection="quizzes",
         child_lookup_field="chapter_id",
         page=page,
@@ -101,7 +100,7 @@ async def get_current_quiz_details_logic(quiz_id: str):
         parent_id=quiz_id,
         parent_collection="quizzes",
         parent_id_field="quiz_id",
-        parent_name_field="title",
+        parent_name_field="name",
         child_collection="questions",  # Target database tracking questions layer
         child_lookup_field="quiz_id",
         child_schema_model=None
@@ -126,6 +125,6 @@ async def get_current_quiz_details_logic(quiz_id: str):
 
     return {
         "quiz_id": aggregated_data.get("quiz_id"),
-        "quiz_title": quiz_exists.get("title") or aggregated_data.get("quiz_name") or aggregated_data.get("title") or "Untitled Quiz",
+        "quiz_name": quiz_exists.get("name") or aggregated_data.get("quiz_name") or aggregated_data.get("name") or "Unnamed Quiz",
         "questions": formatted_questions
     }

@@ -1,13 +1,19 @@
 from pydantic import BaseModel, Field
 from typing import List, Optional
 
+# base models for subject schemas, including nested references and standalone CRUD operations
+class SubjectBase(BaseModel):
+    """The master blueprint schema containing the core fields needed everywhere."""
+    exam_id: str = Field(..., example="exam_ee51fa", description="The dynamic link reference tracking the master exam target identity")
+    name: str = Field(..., example="Physics", description="The master name structural tracking name of the subject domain")
+
 # =====================================================================
 # 1. NESTED REFERENCE SCHEMAS (Rightful Ownership Here!)
 # =====================================================================
 class SubjectNestedResponse(BaseModel):
     """Clean nested model used when listing subjects inside an Exam lookup"""
     subject_id: str = Field(..., example="sub_x1y2z3", description="The identity token tracking key identifier")
-    name: str = Field(..., example="Physics", description="The clean title configuration of this unique subject")
+    name: str = Field(..., example="Physics", description="The clean name configuration of this unique subject")
 
 
 class ExamWithSubjectsResponse(BaseModel):
@@ -22,14 +28,16 @@ class ExamWithSubjectsResponse(BaseModel):
 # =====================================================================
 # 2. STANDALONE SUBJECT CRUD OPERATION SCHEMAS
 # =====================================================================
-class SubjectCreate(BaseModel):
-    exam_id: str = Field(..., example="exam_ee51fa", description="The dynamic link reference tracking the master exam target identity")
-    name: str = Field(..., example="Physics", description="The master title structural tracking name of the subject domain")
+class SubjectCreate(SubjectBase):
+    pass
+
 
 
 class SubjectResponse(SubjectCreate):
     subject_id: str = Field(..., example="sub_a1b2c3", description="Unique identifier tracking generated key maps for output processes")
 
+class SubjectListResponse(SubjectBase):
+    id: str = Field(..., example="sub_a1b2c3", description="Unique identifier tracking generated key maps for output processes")
 
 class BulkSubjectCreate(BaseModel):
     exam_id: str = Field(..., example="exam_ee51fa", description="The master mapping identity link key token tracking execution bounds")

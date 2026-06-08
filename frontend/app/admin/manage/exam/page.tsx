@@ -23,9 +23,9 @@ export default function ContentManagementPortal() {
     const handleGetExams = async () => {
       try {
         await fetchExams(); // Updates internal global store array state reactively
-        toast.success("Exams loaded successfully! 🚀");
+        // toast.success("Exams loaded successfully! 🚀");
       } catch (error) {
-        toast.error("Failed to load existing exams.");
+        // toast.error("Failed to load existing exams.");
         console.error("Error fetching exams:", error);
       }
     };
@@ -75,7 +75,8 @@ export default function ContentManagementPortal() {
         />
 
         {/* 3. FIXED: Passed 'exams' (array) instead of 'fetchExams' (async function) */}
-        <Table data={exams} loading={isLoading} header={["Name", "Description"]} />
+        <Table data={exams} loading={isLoading} header={["S No.", 
+          "Name", "Description"]} />
       </div>
     </div>
   );

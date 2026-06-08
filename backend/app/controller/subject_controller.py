@@ -2,7 +2,7 @@ import uuid
 from app.config.db import get_collection
 from fastapi import HTTPException, status
 from app.utils.db_helpers import execute_smart_bulk_insert, populate_parent_with_children,generate_semantic_id
-from app.utils.filter_helpers import populate_all_parents_with_children_paginated
+from app.utils.filter_helpers import populate_children_paginated
 from app.schemas.subject_schemas import SubjectCreate, BulkSubjectCreate
 from app.schemas.chapter_schemas import ChapterNestedResponse  # Injected dynamic mapping reference
 
@@ -59,21 +59,19 @@ async def create_bulk_subjects_logic(payload: BulkSubjectCreate) -> dict:
 
     return result
 
-async def get_all_subjects_by_exam_logic(page: int = 1, limit: int = 10) -> dict:
+async def get_paginated_subjects_logic(page: int = 1, limit: int = 10) -> dict:
     """
-    Retrieves the complete list of exams with their subjects using the new bulk paginated utility.
-    No local looping required here; offloads structural grouping tasks to the specialized wrapper.
+    Queries the subjects collection directly and pulls a clean, 
+    flat paginated list using the master utility helper.
     """
-    # Simply forwarding the configuration layout directly to our new dedicated helper
-    aggregated_response = await populate_all_parents_with_children_paginated(
-        parent_collection="exams",
+    aggregated_response = await populate_children_paginated(
         child_collection="subjects",
         child_lookup_field="exam_id",
         page=page,
         limit=limit
     )
-    
     return aggregated_response
+
 
 
 async def get_current_subject_with_chapters_logic(subject_id: str) -> dict:

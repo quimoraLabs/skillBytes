@@ -21,7 +21,7 @@ def generate_semantic_id(prefix: str, content_value: str) -> str:
     # Automatically detect the current operational year context
     current_year = datetime.now().year
     
-    # Extract and sanitize the first 3 alphanumeric characters of the name/title content string
+    # Extract and sanitize the first 3 alphanumeric characters of the name/name content string
     sanitized_token = "".join(e for e in content_value if e.isalnum()).lower()[:3]
     if not sanitized_token:
         sanitized_token = "gen"  # fallback default token if content string consists of symbols only
@@ -42,7 +42,7 @@ async def execute_smart_bulk_insert(
     child_id_key: str,          # destination target identifier field key 
     child_id_prefix: str,       # domain key string namespace token prefix (e.g., "sub", "ch")
     items_list: List[Any],      # input list payload container (strings or dictionaries)
-    match_field_in_db: str      # business uniqueness tracking property key name (e.g., "name", "title")
+    match_field_in_db: str      # business uniqueness tracking property key name (e.g., "name", "name")
 ) -> Dict[str, Any]:
     """
     Executes an optimized batch data ingestion cycle into MongoDB. It protects against
